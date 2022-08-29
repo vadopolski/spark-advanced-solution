@@ -33,6 +33,8 @@ libraryDependencies ++= Seq(
   "org.apache.spark" %% "spark-core" % sparkVersion,
   "org.apache.spark" %% "spark-core" % sparkVersion % Test classifier "tests",
 
+  "com.github.scopt" %% "scopt" % "4.0.1",
+
   "org.apache.spark" %% "spark-streaming" % sparkVersion,
   "org.apache.spark" % "spark-sql-kafka-0-10_2.12" % sparkVersion,
   "org.apache.spark" %% "spark-streaming-kafka-0-10" % sparkVersion,

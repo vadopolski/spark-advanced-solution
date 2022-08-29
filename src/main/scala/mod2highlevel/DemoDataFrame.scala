@@ -3,8 +3,10 @@ package mod2highlevel
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.functions.{broadcast, col}
-import org.apache.spark.sql.{DataFrame, SparkSession}
+import org.apache.spark.sql.{DataFrame, Dataset, Row, SparkSession}
 import org.apache.spark.storage.StorageLevel.DISK_ONLY
+import org.apache.spark.sql.functions.{col, count, desc}
+
 
 object DemoDataFrame extends App {
 
@@ -18,11 +20,37 @@ object DemoDataFrame extends App {
    *
    * */
 
+  val slotsNumber = 2
+
   implicit val spark = SparkSession
     .builder()
     .appName("Introduction to RDDs")
-    .config("spark.master", "local")
+    .config("spark.master", s"local[$slotsNumber]")
     .getOrCreate()
 
 
+  val taxiFactsDF = spark
+    .read
+    .load("src/main/resources/yellow_taxi_jan_25_2018")
+    .repartition(slotsNumber)
+
+  taxiFactsDF.cache()
+
+  val taxiZonesDF = spark
+    .read
+    .format("csv")
+    .option("header", "true")
+    .load("src/main/resources/taxi_zones.csv")
+
+  val mostPopularDF = taxiFactsDF.as("facts")
+    .join(taxiZonesDF.as("zones"), col("facts.DOLocationID") === col("zones.LocationID"))
+    .select("LocationID", "Zone")
+    .groupBy("LocationID", "Zone")
+    .agg(count(col("LocationID")).as("Count"))
+    .orderBy(desc("Count"))
+    .coalesce(1)
+
+  mostPopularDF.show(5)
+
+  mostPopularDF.write.save("mostPopular_taxi_dest_25_2018")
 }
